@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<meta name="theme-color" content="#6366f1" />
+<title>课程登记</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<style>
+  :root {
+    --bg: #f5f6fa;
+    --card: #ffffff;
+    --text: #1f2333;
+    --muted: #8a90a3;
+    --line: #e8eaf0;
+    --primary: #6366f1;
+    --primary-strong: #4f46e5;
+    --danger: #ef4444;
+    --ok: #10b981;
+    --shadow: 0 1px 2px rgba(20,22,40,.05), 0 4px 16px rgba(20,22,40,.06);
+    --radius: 16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161f;
+      --card: #1d2029;
+      --text: #eef0f6;
+      --muted: #8a90a3;
+      --line: #2a2e3c;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35);
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 0 16px calc(90px + env(safe-area-inset-bottom)); }
+
+  header.top {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0 8px;
+    background: linear-gradient(var(--bg) 70%, transparent);
+    backdrop-filter: blur(6px);
+  }
+  .top h1 { font-size: 22px; margin: 0; letter-spacing: .5px; }
+  .icon-btn {
+    border: 1px solid var(--line); background: var(--card); color: var(--text);
+    width: 40px; height: 40px; border-radius: 12px; font-size: 18px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    box-shadow: var(--shadow);
+  }
+
+  .summary {
+    display: flex; gap: 10px; margin: 6px 0 14px;
+  }
+  .summary .tile {
+    flex: 1; background: var(--card); border-radius: var(--radius);
+    padding: 14px 16px; box-shadow: var(--shadow); border: 1px solid var(--line);
+  }
+  .summary .num { font-size: 28px; font-weight: 700; }
+  .summary .lbl { font-size: 12px; color: var(--muted); }
+
+  .banner {
+    display: none;
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    color: #fff; border-radius: 14px; padding: 14px 16px; margin-bottom: 14px;
+    box-shadow: var(--shadow); align-items: center; gap: 10px;
+  }
+  .banner.show { display: flex; animation: pulse 1.6s infinite; }
+  .banner .b-title { font-weight: 700; }
+  .banner .b-sub { font-size: 13px; opacity: .95; }
+  @keyframes pulse { 0%,100%{ transform: scale(1);} 50%{ transform: scale(1.015);} }
+
+  .empty {
+    text-align: center; padding: 60px 20px; color: var(--muted);
+  }
+  .empty .big { font-size: 52px; }
+
+  .course {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow);
+    position: relative; transition: box-shadow .15s;
+  }
+  .course.remind {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 2px rgba(245,158,11,.25), var(--shadow);
+  }
+  .course-head { display: flex; align-items: center; gap: 10px; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 2px rgba(255,255,255,.25); }
+  .course-head .name { font-size: 17px; font-weight: 700; flex: 1; word-break: break-all; }
+  .course-head .menu {
+    background: none; border: none; color: var(--muted); font-size: 18px;
+    padding: 6px 8px; cursor: pointer; border-radius: 8px;
+  }
+  .counts { display: flex; align-items: baseline; gap: 16px; margin: 8px 0 4px; }
+  .counts .big { font-size: 40px; font-weight: 800; line-height: 1; }
+  .counts .unit { color: var(--muted); font-size: 13px; }
+  .schedule { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+  .schedule b { color: var(--text); font-weight: 600; }
+  .remind-tag {
+    display: none; background: #fef3c7; color: #92400e; border-radius: 8px;
+    font-size: 12px; font-weight: 600; padding: 3px 8px; margin-left: 6px;
+  }
+  .course.remind .remind-tag { display: inline-block; }
+
+  .actions { display: flex; gap: 10px; }
+  .btn {
+    border: none; border-radius: 12px; font-size: 16px; font-weight: 700;
+    padding: 13px 16px; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; gap: 6px; transition: transform .06s, opacity .12s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { flex: 2; background: var(--primary); color: #fff; }
+  .btn-primary:active { background: var(--primary-strong); }
+  .btn-ghost { flex: 1; background: transparent; border: 1px solid var(--line); color: var(--muted); font-weight: 600; font-size: 14px; }
+
+  .history { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 8px; }
+  .history-toggle {
+    background: none; border: none; color: var(--muted); font-size: 13px;
+    padding: 4px 0; cursor: pointer; display: flex; align-items: center; gap: 4px;
+  }
+  .history-list { display: none; max-height: 220px; overflow: auto; }
+  .history.open .history-list { display: block; }
+  .h-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 4px; font-size: 13px; border-bottom: 1px solid var(--line);
+  }
+  .h-item .del { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 14px; padding: 2px 8px; }
+
+  .fab {
+    position: fixed; right: 20px; bottom: calc(22px + env(safe-area-inset-bottom));
+    width: 58px; height: 58px; border-radius: 50%; border: none;
+    background: var(--primary); color: #fff; font-size: 30px; line-height: 1;
+    box-shadow: 0 8px 24px rgba(99,102,241,.45); cursor: pointer; z-index: 30;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .fab:active { background: var(--primary-strong); }
+
+  /* modal */
+  .mask {
+    position: fixed; inset: 0; background: rgba(10,12,20,.55); z-index: 40;
+    display: none; align-items: flex-end; justify-content: center;
+  }
+  .mask.show { display: flex; }
+  .sheet {
+    background: var(--card); width: 100%; max-width: 520px;
+    border-radius: 20px 20px 0 0; padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+    animation: up .2s ease; max-height: 90vh; overflow: auto;
+  }
+  @keyframes up { from { transform: translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .sheet h2 { margin: 0 0 16px; font-size: 18px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .field input, .field select {
+    width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 12px;
+    background: var(--bg); color: var(--text); font-size: 16px;
+  }
+  .row2 { display: flex; gap: 12px; }
+  .row2 .field { flex: 1; }
+  .colors { display: flex; gap: 10px; flex-wrap: wrap; }
+  .colors input { display: none; }
+  .colors .swatch {
+    width: 34px; height: 34px; border-radius: 50%; cursor: pointer;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.2);
+  }
+  .colors input:checked + .swatch { box-shadow: 0 0 0 3px var(--text); }
+  .sheet-actions { display: flex; gap: 10px; margin-top: 18px; }
+  .sheet-actions .btn-primary { flex: 1; }
+  .sheet-actions .btn-ghost { flex: 1; }
+  .danger-zone { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+  .danger-zone span { font-size: 13px; color: var(--muted); }
+  .btn-danger { background: rgba(239,68,68,.12); color: var(--danger); border: none; border-radius: 10px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom));
+    transform: translateX(-50%); background: var(--text); color: var(--bg);
+    padding: 10px 18px; border-radius: 20px; font-size: 14px; z-index: 60;
+    opacity: 0; transition: opacity .2s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>📚 课程登记</h1>
+    <button class="icon-btn" id="btnNotify" title="开启提醒">🔔</button>
+  </header>
+
+  <div class="summary">
+    <div class="tile"><div class="num" id="sumToday">0</div><div class="lbl">今日已登记</div></div>
+    <div class="tile"><div class="num" id="sumWeek">0</div><div class="lbl">本周累计</div></div>
+    <div class="tile"><div class="num" id="sumAll">0</div><div class="lbl">全部累计</div></div>
+  </div>
+
+  <div class="banner" id="banner">
+    <div>
+      <div class="b-title">⏰ 该登记上课次数啦</div>
+      <div class="b-sub" id="bannerSub"></div>
+    </div>
+  </div>
+
+  <div id="list"></div>
+
+  <div class="empty" id="empty">
+    <div class="big">📝</div>
+    <p>还没有课程，点击右下角 + 添加第一门课</p>
+  </div>
+</div>
+
+<button class="fab" id="btnAdd" title="添加课程">＋</button>
+
+<!-- 课程编辑弹窗 -->
+<div class="mask" id="modal">
+  <div class="sheet">
+    <h2 id="modalTitle">添加课程</h2>
+    <input type="hidden" id="f_id" />
+    <div class="field">
+      <label>课程名称</label>
+      <input type="text" id="f_name" placeholder="例如：钢琴课、英语课" />
+    </div>
+    <div class="field">
+      <label>每周上课日</label>
+      <select id="f_day">
+        <option value="1">周一</option><option value="2">周二</option>
+        <option value="3">周三</option><option value="4">周四</option>
+        <option value="5">周五</option><option value="6">周六</option><option value="0">周日</option>
+      </select>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>开始时间</label>
+        <input type="time" id="f_start" value="16:00" />
+      </div>
+      <div class="field">
+        <label>结束时间</label>
+        <input type="time" id="f_end" value="17:00" />
+      </div>
+    </div>
+    <div class="field">
+      <label>结束多久后提醒登记（分钟）</label>
+      <input type="number" id="f_remind" value="30" min="0" max="360" step="5" />
+    </div>
+    <div class="field">
+      <label>标签颜色</label>
+      <div class="colors" id="f_colors"></div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="btnCancel">取消</button>
+      <button class="btn btn-primary" id="btnSave">保存</button>
+    </div>
+    <div class="danger-zone" id="dangerZone" style="display:none">
+      <span>删除此课程及其全部记录</span>
+      <button class="btn-danger" id="btnDelete">删除</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var STORAGE_KEY = 'courseAttendance.v1';
+  var REMIND_WINDOW_MS = 3 * 60 * 60 * 1000; // 提醒窗口 3 小时
+  var DAYS = ['周日','周一','周二','周三','周四','周五','周六'];
+  var PALETTE = ['#6366f1','#ec4899','#f59e0b','#10b981','#06b6d4','#8b5cf6','#ef4444','#64748b'];
+
+  var state = load();
+
+  function defaultState() { return { courses: [] }; }
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return defaultState();
+      var s = JSON.parse(raw);
+      if (!s || !Array.isArray(s.courses)) return defaultState();
+      return s;
+    } catch (e) { return defaultState(); }
+  }
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+  function uid() {
+    try { return crypto.randomUUID(); } catch (e) {}
+    return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+
+  /* ---------- 日期/时间工具 ---------- */
+  function parseTime(t) { var p = String(t).split(':'); return { h: +p[0], m: +p[1] || 0 }; }
+  function startOfDay(d) { var r = new Date(d); r.setHours(0,0,0,0); return r; }
+  function startOfWeek(d) {
+    var r = startOfDay(d);
+    var day = (r.getDay() + 6) % 7; // 周一为一周开始
+    r.setDate(r.getDate() - day);
+    return r;
+  }
+  function dateAt(dayOfWeek, timeStr, base) {
+    var d = startOfDay(base);
+    d.setDate(d.getDate() + ((dayOfWeek - d.getDay() + 7) % 7));
+    var t = parseTime(timeStr);
+    d.setHours(t.h, t.m, 0, 0);
+    return d;
+  }
+  function classStart(c, base) { return dateAt(c.dayOfWeek, c.startTime, base); }
+  function classEnd(c, base) { return dateAt(c.dayOfWeek, c.endTime, base); }
+  function fmt(ts) {
+    var d = new Date(ts);
+    return (d.getMonth()+1) + '/' + d.getDate() + ' ' +
+      String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  }
+
+  /* ---------- 提醒判断 ---------- */
+  function activeReminder(course) {
+    var now = new Date();
+    // 从今天往前最多 7 天，找到匹配星期几的那次课
+    for (var off = 0; off <= 7; off++) {
+      var base = new Date(now); base.setDate(now.getDate() - off);
+      if (base.getDay() !== course.dayOfWeek) continue;
+      var end = classEnd(course, base);
+      var remindAt = new Date(end.getTime() + (course.remindMinutes || 0) * 60000);
+      var windowEnd = new Date(remindAt.getTime() + REMIND_WINDOW_MS);
+      if (now.getTime() >= remindAt.getTime() && now.getTime() <= windowEnd.getTime()) {
+        var start = classStart(course, base);
+        var hasRecord = course.records.some(function (ts) {
+          var t = new Date(ts).getTime();
+          return t >= start.getTime() && t <= now.getTime();
+        });
+        if (!hasRecord) {
+          return { start: start, end: end, remindAt: remindAt };
+        }
+      }
+    }
+    return null;
+  }
+  function nextClassInfo(course) {
+    var now = new Date();
+    var start = classStart(course, now);
+    if (start.getTime() < now.getTime()) start.setDate(start.getDate() + 7);
+    return start;
+  }
+
+  /* ---------- 渲染 ---------- */
+  function render() {
+    var list = document.getElementById('list');
+    var empty = document.getElementById('empty');
+    var courses = state.courses;
+
+    empty.style.display = courses.length ? 'none' : 'block';
+    list.innerHTML = courses.map(function (c) {
+      var rec = c.records || [];
+      var week = startOfWeek(new Date());
+      var weekCount = rec.filter(function (ts) { return new Date(ts).getTime() >= week.getTime(); }).length;
+      var today = startOfDay(new Date()).getTime();
+      var todayCount = rec.filter(function (ts) { return new Date(ts).getTime() >= today; }).length;
+      var next = nextClassInfo(c);
+      var rem = activeReminder(c);
+
+      var last5 = rec.slice(-5).reverse().map(function (ts) { return fmt(ts); }).join('、');
+
+      var html = '<div class="course' + (rem ? ' remind' : '') + '" data-id="' + esc(c.id) + '">'
+        + '<div class="course-head">'
+        +   '<span class="dot" style="background:' + esc(c.color || '#6366f1') + '"></span>'
+        +   '<span class="name">' + esc(c.name) + '</span>'
+        +   '<button class="menu" data-act="edit">⋯</button>'
+        + '</div>'
+        + '<div class="counts">'
+        +   '<span class="big">' + rec.length + '</span><span class="unit">次</span>'
+        +   '<span class="unit" style="margin-left:auto">本周 ' + weekCount + ' · 今日 ' + todayCount + '</span>'
+        + '</div>'
+        + '<div class="schedule">'
+        +   '📅 每周' + DAYS[c.dayOfWeek] + ' <b>' + esc(c.startTime) + '–' + esc(c.endTime) + '</b>'
+        +   ' · 结束' + (c.remindMinutes || 0) + '分钟后提醒'
+        +   '<span class="remind-tag">⏰ 待登记</span>'
+        + '</div>'
+        + '<div class="schedule" style="margin-top:-6px">下次课：' + (next.getMonth()+1) + '/' + next.getDate() + ' 周' + DAYS[next.getDay()] + '</div>'
+        + '<div class="actions">'
+        +   '<button class="btn btn-primary" data-act="inc">✓ 上课 +1</button>'
+        +   '<button class="btn btn-ghost" data-act="undo">↩ 撤销</button>'
+        + '</div>'
+        + '<div class="history" data-id="' + esc(c.id) + '">'
+        +   '<button class="history-toggle" data-act="toggleHistory">🕘 历史记录（' + rec.length + '）</button>'
+        +   '<div class="history-list">'
+        +     rec.slice().reverse().map(function (ts, i) {
+              var idx = rec.length - 1 - i;
+              return '<div class="h-item"><span>' + fmt(ts) + '</span><button class="del" data-del="' + idx + '">删除</button></div>';
+            }).join('')
+        +   '</div>'
+        + '</div>'
+        + '</div>';
+      return html;
+    }).join('');
+
+    // 汇总
+    var allCount = courses.reduce(function (s, c) { return s + (c.records || []).length; }, 0);
+    var weekAll = courses.reduce(function (s, c) {
+      var w = startOfWeek(new Date()).getTime();
+      return s + (c.records || []).filter(function (ts) { return new Date(ts).getTime() >= w; }).length;
+    }, 0);
+    var todayAll = courses.reduce(function (s, c) {
+      var t = startOfDay(new Date()).getTime();
+      return s + (c.records || []).filter(function (ts) { return new Date(ts).getTime() >= t; }).length;
+    }, 0);
+    document.getElementById('sumAll').textContent = allCount;
+    document.getElementById('sumWeek').textContent = weekAll;
+    document.getElementById('sumToday').textContent = todayAll;
+
+    renderBanner();
+  }
+
+  function renderBanner() {
+    var active = state.courses.filter(function (c) { return activeReminder(c); });
+    var banner = document.getElementById('banner');
+    var sub = document.getElementById('bannerSub');
+    if (active.length) {
+      banner.classList.add('show');
+      sub.textContent = active.map(function (c) { return c.name; }).join('、') + ' · 点击课程卡片里的「+1」完成登记';
+    } else {
+      banner.classList.remove('show');
+    }
+  }
+
+  /* ---------- 操作 ---------- */
+  function toast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function () { t.classList.remove('show'); }, 1600);
+  }
+
+  function getCourse(id) {
+    return state.courses.find(function (c) { return c.id === id; });
+  }
+
+  function inc(id) {
+    var c = getCourse(id);
+    if (!c) return;
+    c.records = c.records || [];
+    c.records.push(new Date().toISOString());
+    save(); render();
+    toast('已登记 ' + c.name);
+  }
+
+  function undo(id) {
+    var c = getCourse(id);
+    if (!c || !c.records || !c.records.length) { toast('没有可撤销的记录'); return; }
+    c.records.pop();
+    save(); render();
+    toast('已撤销最近一次');
+  }
+
+  function delRecord(id, idx) {
+    var c = getCourse(id);
+    if (!c) return;
+    c.records.splice(idx, 1);
+    save(); render();
+  }
+
+  /* ---------- 弹窗 ---------- */
+  var modal = document.getElementById('modal');
+  function openModal(course) {
+    var editing = !!course;
+    document.getElementById('modalTitle').textContent = editing ? '编辑课程' : '添加课程';
+    document.getElementById('f_id').value = editing ? course.id : '';
+    document.getElementById('f_name').value = editing ? course.name : '';
+    document.getElementById('f_day').value = editing ? course.dayOfWeek : 1;
+    document.getElementById('f_start').value = editing ? course.startTime : '16:00';
+    document.getElementById('f_end').value = editing ? course.endTime : '17:00';
+    document.getElementById('f_remind').value = editing ? (course.remindMinutes || 0) : 30;
+    var color = editing ? (course.color || PALETTE[0]) : PALETTE[0];
+    renderColors(color);
+    document.getElementById('dangerZone').style.display = editing ? 'flex' : 'none';
+    modal.classList.add('show');
+  }
+  function closeModal() { modal.classList.remove('show'); }
+
+  function renderColors(selected) {
+    var box = document.getElementById('f_colors');
+    box.innerHTML = PALETTE.map(function (col) {
+      return '<label><input type="radio" name="color" value="' + col + '"' + (col === selected ? ' checked' : '') + '>'
+        + '<span class="swatch" style="background:' + col + '"></span></label>';
+    }).join('');
+  }
+
+  function saveModal() {
+    var id = document.getElementById('f_id').value;
+    var name = document.getElementById('f_name').value.trim();
+    if (!name) { toast('请输入课程名称'); return; }
+    var startTime = document.getElementById('f_start').value || '16:00';
+    var endTime = document.getElementById('f_end').value || '17:00';
+    var color = (document.querySelector('input[name="color"]:checked') || {}).value || PALETTE[0];
+    var data = {
+      name: name,
+      dayOfWeek: +document.getElementById('f_day').value,
+      startTime: startTime,
+      endTime: endTime,
+      remindMinutes: Math.max(0, +document.getElementById('f_remind').value || 0),
+      color: color
+    };
+    if (id) {
+      var c = getCourse(id);
+      if (c) Object.assign(c, data);
+    } else {
+      data.id = uid();
+      data.records = [];
+      state.courses.push(data);
+    }
+    save(); closeModal(); render();
+    toast('已保存');
+  }
+
+  function deleteCourse() {
+    var id = document.getElementById('f_id').value;
+    if (!id) return;
+    if (!confirm('确定删除该课程及其全部记录吗？')) return;
+    state.courses = state.courses.filter(function (c) { return c.id !== id; });
+    save(); closeModal(); render();
+    toast('已删除');
+  }
+
+  /* ---------- 提醒与通知 ---------- */
+  var notified = {}; // occurrenceKey -> true，本次会话去重
+
+  function occKey(c) {
+    var rem = activeReminder(c);
+    if (!rem) return null;
+    return c.id + '@' + rem.remindAt.getTime();
+  }
+
+  function checkReminders() {
+    var actives = state.courses.filter(function (c) { return activeReminder(c); });
+    if (actives.length) {
+      var names = actives.map(function (c) { return c.name; });
+      if ('Notification' in window && Notification.permission === 'granted') {
+        actives.forEach(function (c) {
+          var key = occKey(c);
+          if (key && !notified[key]) {
+            notified[key] = true;
+            try {
+              new Notification('📚 该登记上课次数啦', {
+                body: c.name + '（每周' + DAYS[c.dayOfWeek] + ' ' + c.startTime + '–' + c.endTime + '）已结束，记得点「+1」登记',
+                tag: key
+              });
+            } catch (e) {}
+          }
+        });
+      }
+      if (navigator.vibrate) { try { navigator.vibrate(200); } catch (e) {} }
+    }
+    renderBanner();
+  }
+
+  function requestNotify() {
+    if (!('Notification' in window)) { toast('当前浏览器不支持通知'); return; }
+    if (Notification.permission === 'granted') { toast('提醒已开启 ✓'); return; }
+    Notification.requestPermission().then(function (p) {
+      toast(p === 'granted' ? '提醒已开启 ✓' : '未开启通知');
+    }).catch(function () { toast('未开启通知'); });
+  }
+
+  /* ---------- 事件绑定 ---------- */
+  document.getElementById('list').addEventListener('click', function (e) {
+    var el = e.target.closest('[data-act], [data-del]');
+    if (!el) return;
+    var card = e.target.closest('.course');
+    var id = card ? card.getAttribute('data-id') : null;
+    if (el.hasAttribute('data-del') && id) {
+      delRecord(id, +el.getAttribute('data-del'));
+      return;
+    }
+    if (!id) return;
+    var act = el.getAttribute('data-act');
+    if (act === 'inc') inc(id);
+    else if (act === 'undo') undo(id);
+    else if (act === 'edit') openModal(getCourse(id));
+    else if (act === 'toggleHistory') {
+      var h = card.querySelector('.history');
+      h.classList.toggle('open');
+    }
+  });
+
+  document.getElementById('btnAdd').addEventListener('click', function () { openModal(null); });
+  document.getElementById('btnCancel').addEventListener('click', closeModal);
+  document.getElementById('btnSave').addEventListener('click', saveModal);
+  document.getElementById('btnDelete').addEventListener('click', deleteCourse);
+  document.getElementById('btnNotify').addEventListener('click', requestNotify);
+  modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+
+  // 页面回到前台时立即检查一次提醒
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) checkReminders();
+  });
+
+  /* ---------- 初始化 ---------- */
+  render();
+  checkReminders();
+  setInterval(checkReminders, 60 * 1000); // 每分钟检查
+
+  // PWA 离线支持（HTTPS/localhost 下注册）
+  if ('serviceWorker' in navigator &&
+      (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
+  }
+})();
+</script>
+</body>
+</html>

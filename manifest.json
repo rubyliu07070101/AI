@@ -1,0 +1,15 @@
+{
+  "name": "课程登记",
+  "short_name": "课程登记",
+  "description": "记录孩子课外辅导班上课次数，课后提醒登记",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f6fa",
+  "theme_color": "#6366f1",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
